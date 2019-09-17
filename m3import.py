@@ -754,16 +754,20 @@ class Importer:
             # Import all materials:
             matRefIndicesToImport = set(range(len(self.model.materialReferences)))    
         
+
         for materialReferenceIndex, m3MaterialReference in enumerate(self.model.materialReferences):
             if not materialReferenceIndex in matRefIndicesToImport:
                 continue
             materialType = m3MaterialReference.materialType
             m3MaterialIndex = m3MaterialReference.materialIndex
             m3MaterialFieldName = shared.m3MaterialFieldNames[materialType]
+            m3MaterialList = getattr(self.model, m3MaterialFieldName)
+            if len(m3MaterialList) <= m3MaterialIndex:
+                continue
             blenderMaterialsFieldName = shared.blenderMaterialsFieldNames[materialType]
             transferMethod = shared.materialTransferMethods[materialType]
             
-            m3Material = getattr(self.model, m3MaterialFieldName)[m3MaterialIndex]
+            m3Material = m3MaterialList[m3MaterialIndex]
             blenderMaterialCollection = getattr(scene, blenderMaterialsFieldName)
             blenderMaterialIndex = len(blenderMaterialCollection)
             material = blenderMaterialCollection.add()
@@ -802,6 +806,8 @@ class Importer:
         materialType = materialReference.materialType
         m3MaterialFieldName = shared.m3MaterialFieldNames[materialType]
         m3MaterialList = getattr(self.model, m3MaterialFieldName)
+        if len(m3MaterialList) <= materialIndex:
+            return ""
         return m3MaterialList[materialIndex].name    
     
     def createCameras(self):

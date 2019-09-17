@@ -2267,7 +2267,8 @@
             <field till-version="1" name="planeEquations" type="SmallReference" refTo="VEC4" />
             <!-- Belongs to the previous reference and seems not be get properly initialized with 0: -->
             <field till-version="1" name="uninitializedFieldAt116" type="uint32" default-value="0" />
-            <field name="unknown66ce545e" size="24" expected-value="0x000000000000000000000000000000000000000000000000" since-version="3" />
+            <field name="unknown66ce545e" size="20" expected-value="0x0000000000000000000000000000000000000000" since-version="3" />
+            <field name="unknown66ce545e_b" type="uint32" size="1" since-version="3" />
             <field name="size0" type="float" default-value="1.0" /> <!-- box x-size / capsule radius (/ cylinder radius / sphere radius?) -->
             <field name="size1" type="float" default-value="1.0" /> <!-- box y-size / capsule length (/ cylinder length?) -->
             <field name="size2" type="float" default-value="1.0" /> <!-- box z-size -->
@@ -2716,6 +2717,21 @@
             <field name="unknownca6025a2" type="FloatAnimationReference" />
         </fields>
     </structure>
+
+    <structure name="MADD" version="2" size="160">
+        <description>Model-Addition?</description>
+        <versions>
+            <version number="2" size="160" />
+        </versions>
+        <fields>
+            <field name="name" type="Reference" refTo="CHAR" since-version="2" />
+            <field name="unknown2" type="Reference" refTo="U32_" since-version="2" />
+            <field name="unknown3" type="Reference" refTo="CHAR" since-version="2" />
+            <field name="unknown4" type="Reference" refTo="CHAR" since-version="2" />
+            <field name="unknown5" type="Reference" refTo="SCHR" since-version="2" />
+            <field name="unknown6" size="100" since-version="2" />
+        </fields>
+    </structure>
     
     <structure name="MODL" >
         <description>
@@ -2728,6 +2744,7 @@
             <version number="26" size="820" />
             <version number="28" size="844" />
             <version number="29" size="856" />
+            <version number="30" size="868" />
         </versions>
         <fields>
             <field name="modelName" type="Reference" refTo="CHAR"/>
@@ -2768,13 +2785,13 @@
             <field name="unknown09" type="uint32" expected-value="0" />
             <field name="unknown11" type="uint32" expected-value="0" />
             <field name="unknown12" type="uint32" expected-value="0" />
-            <field name="unknown13" type="uint32" expected-value="0" />
+            <field name="unknown13" type="uint32" />
             <field name="unknown14" type="uint32" expected-value="0" />
             <field name="unknown15" type="uint32" expected-value="0" />
-            <field name="unknown16" type="uint32" expected-value="0" />
+            <field name="unknown16" type="uint32" />
             <field name="unknown17" type="uint32" expected-value="0" />
             <field name="unknown18" type="uint32" expected-value="0" />
-            <field name="unknown19" type="uint32" expected-value="0" />
+            <field name="unknown19" type="uint32" />
             <field name="attachmentPoints" type="Reference" refTo="ATT_" />
             <field name="attachmentPointAddons" type="Reference" refTo="U16_"/>
             <field name="lights" type="Reference" refTo="LITE" />
@@ -2794,6 +2811,7 @@
             <field name="splatTerrainBakeMaterials" type="Reference" refTo="STBM" since-version="26" />
             <field name="reflectionMaterial" type="Reference" refTo="REF_" since-version="28" />
             <field name="lensFlareMaterial" type="Reference" refTo="LFLR" since-version="29" />
+            <field name="additional" type="Reference" refTo="MADD" since-version="30" />
             <field name="particles" type="Reference" refTo="PAR_" />
             <field name="particleCopies" type="Reference" refTo="PARC" />
             <field name="ribbons" type="Reference" refTo="RIB_" />
@@ -2825,7 +2843,6 @@
             <field name="unknown45" type="Reference" refTo="U32_" />
         </fields>
     </structure>
-    
     
     <structure name="MD34" version="11" size="24">
         <description>Header of a M3 file: Can be found at the start of the file.</description>

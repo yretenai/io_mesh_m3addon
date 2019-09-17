@@ -29,7 +29,7 @@ from os import path
 from bpy_extras import image_utils
 from . import im
 
-materialNames = ["No Material", "Standard", "Displacement", "Composite", "Terrain", "Volume", "Unknown", "Creep", "Volume Noise", "Splat Terrain Bake"]
+materialNames = ["No Material", "Standard", "Displacement", "Composite", "Terrain", "Volume", "Unknown", "Creep", "Volume Noise", "Splat Terrain Bake", "Unknown"]
 standardMaterialTypeIndex = 1
 displacementMaterialTypeIndex = 2
 compositeMaterialTypeIndex = 3
@@ -39,6 +39,7 @@ creepMaterialTypeIndex = 7
 volumeNoiseMaterialTypeIndex = 8
 stbMaterialTypeIndex=9
 lensFlareMaterialTypeIndex=11
+unknownMaterialTypeIndex=12
 
 emissionAreaTypePoint = "0"
 emissionAreaTypePlane = "1"
@@ -1799,7 +1800,8 @@ blenderMaterialsFieldNames = {
     creepMaterialTypeIndex: "m3_creep_materials",
     volumeNoiseMaterialTypeIndex: "m3_volume_noise_materials",
     stbMaterialTypeIndex: "m3_stb_materials",
-    lensFlareMaterialTypeIndex: "m3_lens_flare_materials"
+    lensFlareMaterialTypeIndex: "m3_lens_flare_materials",
+    unknownMaterialTypeIndex: "m3_standard_materials"
     }
 m3MaterialFieldNames = { 
     standardMaterialTypeIndex: "standardMaterials", 
@@ -1810,7 +1812,8 @@ m3MaterialFieldNames = {
     creepMaterialTypeIndex: "creepMaterials",
     volumeNoiseMaterialTypeIndex: "volumeNoiseMaterials",
     stbMaterialTypeIndex: "splatTerrainBakeMaterials",
-    lensFlareMaterialTypeIndex: "lensFlareMaterial"
+    lensFlareMaterialTypeIndex: "lensFlareMaterial",
+    unknownMaterialTypeIndex: "standardMaterials"
     }
 materialTransferMethods = {
         standardMaterialTypeIndex: transferStandardMaterial, 
@@ -1821,5 +1824,6 @@ materialTransferMethods = {
         creepMaterialTypeIndex: transferCreepMaterial,
         volumeNoiseMaterialTypeIndex: transferVolumeNoiseMaterial,
         stbMaterialTypeIndex: transfersplatTerrainBakeMaterial,
-        lensFlareMaterialTypeIndex: transferLensFlareMaterial
+        lensFlareMaterialTypeIndex: transferLensFlareMaterial,
+        unknownMaterialTypeIndex: transferStandardMaterial
     }
