@@ -2718,18 +2718,46 @@
         </fields>
     </structure>
 
-    <structure name="MADD" version="2" size="160">
-        <description>Model-Addition?</description>
+    <structure name="MADD" version="2" size="152">
+        <description>Model something with material</description>
         <versions>
-            <version number="2" size="160" />
+            <version number="2" size="152" />
         </versions>
         <fields>
             <field name="name" type="Reference" refTo="CHAR" since-version="2" />
             <field name="unknown2" type="Reference" refTo="U32_" since-version="2" />
             <field name="unknown3" type="Reference" refTo="CHAR" since-version="2" />
-            <field name="unknown4" type="Reference" refTo="CHAR" since-version="2" />
-            <field name="unknown5" type="Reference" refTo="SCHR" since-version="2" />
-            <field name="unknown6" size="100" since-version="2" />
+            <field name="layerData" type="Reference" refTo="CHAR" since-version="2" />
+            <field name="texturePaths" type="Reference" refTo="SCHR" since-version="2" />
+            <!-- <field name="unknownRef6" type="Reference" /> -->
+            <field name="unknown6Decomp1" type="uint32"/>
+            <field name="unknown6Decomp2" type="uint32" />
+            <field name="unknown6Decomp3" type="uint32" />
+            <!-- <field name="unknownRef7" type="Reference" /> -->
+            <field name="unknown7Decomp1" type="uint32"/>
+            <field name="unknown7Decomp2" type="uint32" />
+            <field name="unknown7Decomp3" type="uint32" />
+            <!-- <field name="unknownRef8" type="Reference" /> -->
+            <field name="unknown8Decomp1" type="uint32"/>
+            <field name="unknown8Decomp2" type="uint32" />
+            <field name="unknown8Decomp3" type="uint32" />
+            <!-- <field name="unknownRef9" type="Reference" /> -->
+            <field name="unknown9Decomp1" type="uint32"/>
+            <field name="unknown9Decomp2" type="uint32" />
+            <field name="unknown9Decomp3" type="uint32" />
+            <field name="unknown10" type="float" since-version="2" />
+            <field name="unknown11" type="float" since-version="2" />
+            <!-- <field name="unknownRef12" type="Reference" /> -->
+            <field name="unknown12Decomp1" type="uint32"/>
+            <field name="unknown12Decomp2" type="uint32" />
+            <field name="unknown12Decomp3" type="uint32" />
+            <field name="unknown13" type="uint32" since-version="2" />
+            <field name="unknown14" type="uint32" since-version="2" />
+            <field name="unknown15" type="uint16" since-version="2" /> <!-- maybe buffer count something? -->
+            <field name="unknown16" type="uint16" since-version="2" /> <!-- always 0x400 -->
+            <field name="unknown17" type="uint32"/>
+            <field name="unknown18" type="uint32" />
+            <field name="flags" type="uint32" /> <!-- 0x10000 with character models? -->
         </fields>
     </structure>
     
@@ -2811,7 +2839,7 @@
             <field name="splatTerrainBakeMaterials" type="Reference" refTo="STBM" since-version="26" />
             <field name="reflectionMaterial" type="Reference" refTo="REF_" since-version="28" />
             <field name="lensFlareMaterial" type="Reference" refTo="LFLR" since-version="29" />
-            <field name="additional" type="Reference" refTo="MADD" since-version="30" />
+            <field name="bufferMaterial" type="Reference" refTo="MADD" since-version="30" />
             <field name="particles" type="Reference" refTo="PAR_" />
             <field name="particleCopies" type="Reference" refTo="PARC" />
             <field name="ribbons" type="Reference" refTo="RIB_" />

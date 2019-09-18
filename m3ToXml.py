@@ -31,7 +31,7 @@ import traceback
 import re
 
 def byteDataToHex(byteData):
-    return '0x' + ''.join(["%02x" % x for x in byteData])
+    return ''.join(["%02x" % x for x in byteData])
 
 
 def indent(level):
@@ -46,6 +46,19 @@ def closeTag(name):
 def openCloseTag(name):
     return "<%s />\n" % name
 
+def rawbytes(s):
+    outlist = []
+    for cp in s:
+        num = ord(cp)
+        if num < 255:
+            outlist.append(struct.pack('B', num))
+        elif num < 65535:
+            outlist.append(struct.pack('>H', num))
+        else:
+            b = (num & 0xFF0000) >> 16
+            H = num & 0xFFFF
+            outlist.append(struct.pack('>bH', b, H))
+    return b''.join(outlist)
 
 def printXmlElement(out, level, name, value):
     out.write(indent(level) + openTag(name) + value + closeTag(name))
@@ -67,7 +80,10 @@ def printObject(out, level, name, value):
         return
 
     elif valueType == str:
-        value = re.sub('[^\x20-\x7F]', '.', str(value))
+        if re.compile('[^\x20-\x7F]').search(str(value)):
+            value = byteDataToHex(rawbytes(value))
+        else:
+            value = re.sub('[^\x20-\x7F]', '.', str(value))
         printXmlElement(out, level, name, value)
         return
 
