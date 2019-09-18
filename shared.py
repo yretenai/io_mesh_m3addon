@@ -29,7 +29,7 @@ from os import path
 from bpy_extras import image_utils
 from . import im
 
-materialNames = ["No Material", "Standard", "Displacement", "Composite", "Terrain", "Volume", "Unknown", "Creep", "Volume Noise", "Splat Terrain Bake", "Unknown"]
+materialNames = ["No Material", "Standard", "Displacement", "Composite", "Terrain", "Volume", "Unknown", "Creep", "Volume Noise", "Splat Terrain Bake", "Buffer"]
 standardMaterialTypeIndex = 1
 displacementMaterialTypeIndex = 2
 compositeMaterialTypeIndex = 3
@@ -39,7 +39,7 @@ creepMaterialTypeIndex = 7
 volumeNoiseMaterialTypeIndex = 8
 stbMaterialTypeIndex=9
 lensFlareMaterialTypeIndex=11
-unknownMaterialTypeIndex=12
+bufferMaterialTypeIndex=12
 
 emissionAreaTypePoint = "0"
 emissionAreaTypePlane = "1"
@@ -1791,6 +1791,9 @@ def transferLight(transferer):
 def transferBillboardBehavior(transferer):
     transferer.transferEnum("billboardType")
 
+def transferBufferMaterial(transferer):
+    pass
+
 blenderMaterialsFieldNames = {
     standardMaterialTypeIndex: "m3_standard_materials", 
     displacementMaterialTypeIndex: "m3_displacement_materials", 
@@ -1801,7 +1804,7 @@ blenderMaterialsFieldNames = {
     volumeNoiseMaterialTypeIndex: "m3_volume_noise_materials",
     stbMaterialTypeIndex: "m3_stb_materials",
     lensFlareMaterialTypeIndex: "m3_lens_flare_materials",
-    unknownMaterialTypeIndex: "m3_standard_materials"
+    bufferMaterialTypeIndex: "m3_buffer_materials"
     }
 m3MaterialFieldNames = { 
     standardMaterialTypeIndex: "standardMaterials", 
@@ -1813,7 +1816,7 @@ m3MaterialFieldNames = {
     volumeNoiseMaterialTypeIndex: "volumeNoiseMaterials",
     stbMaterialTypeIndex: "splatTerrainBakeMaterials",
     lensFlareMaterialTypeIndex: "lensFlareMaterial",
-    unknownMaterialTypeIndex: "standardMaterials"
+    bufferMaterialTypeIndex: "bufferMaterials"
     }
 materialTransferMethods = {
         standardMaterialTypeIndex: transferStandardMaterial, 
@@ -1825,5 +1828,5 @@ materialTransferMethods = {
         volumeNoiseMaterialTypeIndex: transferVolumeNoiseMaterial,
         stbMaterialTypeIndex: transfersplatTerrainBakeMaterial,
         lensFlareMaterialTypeIndex: transferLensFlareMaterial,
-        unknownMaterialTypeIndex: transferStandardMaterial
+        bufferMaterialTypeIndex: transferBufferMaterial
     }
