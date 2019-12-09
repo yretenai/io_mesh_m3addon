@@ -349,17 +349,7 @@ class UniqueNameFinder:
             self.usedNames.add(item.name)
             
     def findNameAndMarkAsUsedLike(self, wantedName):
-        nameWithoutNumberSuffix = self.removeNumberSuffix(wantedName)
-        namePrefix = nameWithoutNumberSuffix[:25]
-        # Suffixes of sc2 animations most often start with 01
-        # For other objects it doesn't hurt do it the same, and often it is even like that
-        suffixNumber = 1 
-        name = wantedName
-        while name in self.usedNames:
-            name = "%s %02d" % (namePrefix, suffixNumber)
-            suffixNumber += 1
-        self.usedNames.add(name)
-        return name   
+        return wantedName   
 
     
     def removeNumberSuffix(self, name):
