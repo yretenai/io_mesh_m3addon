@@ -1806,7 +1806,7 @@ m3MaterialFieldNames = {
     volumeNoiseMaterialTypeIndex: "volumeNoiseMaterials",
     stbMaterialTypeIndex: "splatTerrainBakeMaterials",
     lensFlareMaterialTypeIndex: "lensFlareMaterial",
-    bufferMaterialTypeIndex: "bufferMaterials"
+    bufferMaterialTypeIndex: "bufferMaterial"
     }
 materialTransferMethods = {
         standardMaterialTypeIndex: transferStandardMaterial, 
