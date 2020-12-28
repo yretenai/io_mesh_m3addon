@@ -29,7 +29,7 @@ from os import path
 from bpy_extras import image_utils
 from . import im
 
-materialNames = ["No Material", "Standard", "Displacement", "Composite", "Terrain", "Volume", "Unknown", "Creep", "Volume Noise", "Splat Terrain Bake"]
+materialNames = ["No Material", "Standard", "Displacement", "Composite", "Terrain", "Volume", "Unknown", "Creep", "Volume Noise", "Splat Terrain Bake", "Buffer"]
 standardMaterialTypeIndex = 1
 displacementMaterialTypeIndex = 2
 compositeMaterialTypeIndex = 3
@@ -39,6 +39,7 @@ creepMaterialTypeIndex = 7
 volumeNoiseMaterialTypeIndex = 8
 stbMaterialTypeIndex=9
 lensFlareMaterialTypeIndex=11
+bufferMaterialTypeIndex=12
 
 emissionAreaTypePoint = "0"
 emissionAreaTypePlane = "1"
@@ -348,18 +349,7 @@ class UniqueNameFinder:
             self.usedNames.add(item.name)
 
     def findNameAndMarkAsUsedLike(self, wantedName):
-        nameWithoutNumberSuffix = self.removeNumberSuffix(wantedName)
-        namePrefix = nameWithoutNumberSuffix[:25]
-        # Suffixes of sc2 animations most often start with 01
-        # For other objects it doesn't hurt do it the same, and often it is even like that
-        suffixNumber = 1
-        name = wantedName
-        while name in self.usedNames:
-            name = "%s %02d" % (namePrefix, suffixNumber)
-            suffixNumber += 1
-        self.usedNames.add(name)
-        return name
-
+        return wantedName   
 
     def removeNumberSuffix(self, name):
         lastIndex = len(name) -1
@@ -1788,6 +1778,9 @@ def transferLight(transferer):
 def transferBillboardBehavior(transferer):
     transferer.transferEnum("billboardType")
 
+def transferBufferMaterial(transferer):
+    pass
+
 blenderMaterialsFieldNames = {
     standardMaterialTypeIndex: "m3_standard_materials",
     displacementMaterialTypeIndex: "m3_displacement_materials",
@@ -1797,7 +1790,8 @@ blenderMaterialsFieldNames = {
     creepMaterialTypeIndex: "m3_creep_materials",
     volumeNoiseMaterialTypeIndex: "m3_volume_noise_materials",
     stbMaterialTypeIndex: "m3_stb_materials",
-    lensFlareMaterialTypeIndex: "m3_lens_flare_materials"
+    lensFlareMaterialTypeIndex: "m3_lens_flare_materials",
+    bufferMaterialTypeIndex: "m3_buffer_materials"
     }
 m3MaterialFieldNames = {
     standardMaterialTypeIndex: "standardMaterials",
@@ -1808,7 +1802,8 @@ m3MaterialFieldNames = {
     creepMaterialTypeIndex: "creepMaterials",
     volumeNoiseMaterialTypeIndex: "volumeNoiseMaterials",
     stbMaterialTypeIndex: "splatTerrainBakeMaterials",
-    lensFlareMaterialTypeIndex: "lensFlareMaterial"
+    lensFlareMaterialTypeIndex: "lensFlareMaterial",
+    bufferMaterialTypeIndex: "bufferMaterial"
     }
 materialTransferMethods = {
         standardMaterialTypeIndex: transferStandardMaterial,
@@ -1819,5 +1814,6 @@ materialTransferMethods = {
         creepMaterialTypeIndex: transferCreepMaterial,
         volumeNoiseMaterialTypeIndex: transferVolumeNoiseMaterial,
         stbMaterialTypeIndex: transfersplatTerrainBakeMaterial,
-        lensFlareMaterialTypeIndex: transferLensFlareMaterial
+        lensFlareMaterialTypeIndex: transferLensFlareMaterial,
+        bufferMaterialTypeIndex: transferBufferMaterial
     }

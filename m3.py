@@ -157,7 +157,7 @@ class M3StructureDescription:
     def createInstances(self, buffer, count, checkExpectedValue=True):
         if self.isPrimitive:
             if self.structureName == "CHAR":
-                return buffer[:count-1].decode("ASCII")
+                return buffer[:count-1].decode("ASCII", "replace")
             elif self.structureName == "U8__":
                 return bytearray(buffer[:count])
             else:

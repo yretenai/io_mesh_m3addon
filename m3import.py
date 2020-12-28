@@ -759,6 +759,9 @@ class Importer:
             materialType = m3MaterialReference.materialType
             m3MaterialIndex = m3MaterialReference.materialIndex
             m3MaterialFieldName = shared.m3MaterialFieldNames[materialType]
+            m3MaterialList = getattr(self.model, m3MaterialFieldName)
+            if len(m3MaterialList) <= m3MaterialIndex:
+                continue
             blenderMaterialsFieldName = shared.blenderMaterialsFieldNames[materialType]
             transferMethod = shared.materialTransferMethods[materialType]
 
@@ -801,8 +804,10 @@ class Importer:
         materialType = materialReference.materialType
         m3MaterialFieldName = shared.m3MaterialFieldNames[materialType]
         m3MaterialList = getattr(self.model, m3MaterialFieldName)
-        return m3MaterialList[materialIndex].name
-
+        if len(m3MaterialList) <= materialIndex:
+            return ""
+        return m3MaterialList[materialIndex].name    
+    
     def createCameras(self):
         scene = bpy.context.scene
         showCameras = scene.m3_bone_visiblity_options.showCameras

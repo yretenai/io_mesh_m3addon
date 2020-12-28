@@ -1,0 +1,9 @@
+header:
+
+    0000..0003 uint32 initCount? -- lines up with unknown2.
+    0004..000B uint64 offsetStart
+    000C..0013 uint64 initSize? -- in bytes
+
+init: starts at offsetStart
+    0014..initSize int16* initdata? -- count lines up unknown15 sometimes
+ 
