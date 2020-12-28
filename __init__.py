@@ -1399,13 +1399,10 @@ class M3LensFlareMaterial(bpy.types.PropertyGroup):
     materialReferenceIndex : bpy.props.IntProperty(options=set(), default=-1)
     layers : bpy.props.CollectionProperty(type=M3MaterialLayer, options=set())
 
-<<<<<<< HEAD
-=======
 class M3MaterialNode(bpy.types.PropertyGroup):
     name : bpy.props.StringProperty(name="name", default="Material", update=handleMaterialNameChange, options=set())
     # the following field gets used to update the name of the material reference:
     materialReferenceIndex : bpy.props.IntProperty(options=set(), default=-1)
->>>>>>> parent/MODLv30
 
 class M3Camera(bpy.types.PropertyGroup):
     name : bpy.props.StringProperty(name="name", default="Camera", update=handleCameraNameChange, options=set())
