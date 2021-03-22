@@ -2721,18 +2721,24 @@
     </structure>
 
     <structure name="MADD" version="3" size="160">
-        <description>Model-Addition?</description>
+        <description>Material Buffer (node based)</description>
         <versions>
+            <version number="1" size="112" />
             <version number="2" size="160" />
             <version number="3" size="160" />
         </versions>
         <fields>
-            <field name="name" type="Reference" refTo="CHAR" since-version="2" />
-            <field name="unknown2" type="Reference" refTo="U32_" since-version="2" />
+            <field name="name" type="Reference" refTo="CHAR" since-version="1" />
+            <field name="sz1" size="48" since-version="2" />
+            <field name="sz2" size="100" since-version="1" />
+            <!-- <field name="unknown2" type="Reference" refTo="U32_" since-version="1" />
             <field name="unknown3" type="Reference" refTo="U32_" since-version="2" />
-            <field name="unknown4" type="Reference" refTo="CHAR" since-version="2" />
-            <field name="unknown5" type="Reference" refTo="SCHR" since-version="2" />
-            <field name="unknown6" size="100" since-version="2" />
+            <field name="unknown4" type="Reference" refTo="CHAR" since-version="1" />
+            <field name="unknown5" type="Reference" refTo="SCHR" since-version="1" />
+            <field name="unknown6" type="Matrix44" since-version="1" />
+            <field name="unknown7" type="Reference" since-version="2" />
+            <field name="unknown8" type="Reference" since-version="2" />
+            <field name="unknown9" type="Reference" since-version="2" /> -->
         </fields>
     </structure>
     

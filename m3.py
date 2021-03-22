@@ -358,27 +358,29 @@ class ReferenceField(Field):
         ref = getattr(owner, self.name)
         ownerName = owner.structureDescription.structureName
         variable = "%(ownerName)s.%(fieldName)s" % {"ownerName":ownerName, "fieldName":self.name}
-        if ref.entries == 0:
-            if self.historyOfReferencedStructures == None:
-                referencedObjects = []
-            else:
-                referencedObjects =  self.historyOfReferencedStructures.createEmptyArray()
+        referencedObjects = []
+        if ref.entries == 0 or ref.index == 0 or ref.index > len(sections):
+            if self.historyOfReferencedStructures is not None:
+                referencedObjects = self.historyOfReferencedStructures.createEmptyArray()
         else:
             referencedSection = sections[ref.index]
             referencedSection.timesReferenced += 1
             indexEntry = referencedSection.indexEntry
 
             if indexEntry.repetitions < ref.entries:
-                raise Exception("%s tries to reference %s elements in a %s section that contains just %s element(s)" % (variable, ref.entries, indexEntry.tag, indexEntry.repetitions))
+                stderr.write("%s tries to reference %s elements in a %s section that contains just %s element(s)" % (variable, ref.entries, indexEntry.tag, indexEntry.repetitions))
+                return
 
             referencedObjects = referencedSection.content
             if self.historyOfReferencedStructures != None:
                 expectedTagName = self.historyOfReferencedStructures.name
                 actualTagName = indexEntry.tag
                 if actualTagName != expectedTagName:
-                    raise Exception("Expected ref %s point to %s, but it points to %s" % (variable, expectedTagName, actualTagName))
+                    stderr.write("Expected ref %s point to %s, but it points to %s" % (variable, expectedTagName, actualTagName))
+                    return
             else:
-                raise Exception("Field %s can be marked as a reference pointing to %s" % (variable, indexEntry.tag))
+                stderr.write("Field %s can be marked as a reference pointing to %s" % (variable, indexEntry.tag))
+                return
 
         setattr(owner, self.name, referencedObjects)
 
@@ -1173,12 +1175,12 @@ def checkThatAllSectionsGotReferenced(sections):
                     positionInSection = sectionToCheck.rawBytes.find(bytesToSearch)
                     if positionInSection != -1:
                         flagBytes = sectionToCheck.rawBytes[positionInSection+8:positionInSection+12]
-                        flagsAsHex = byteDataToHex(flagBytes)
+                        flagsAsHex = flagBytes.hex()
                         stderr.write("  -> Found maybe a reference at offset %d in a section of type %sV%s with flag %s\n" % (positionInSection, sectionToCheck.indexEntry.tag,sectionToCheck.indexEntry.version, flagsAsHex))
                         sectionToCheck.structureDescription.dumpOffsets()
 
     if numberOfUnreferencedSections > 0:
-        raise Exception("Unable to load all data: There were %d unreferenced sections. View log for details" % numberOfUnreferencedSections)
+        stderr.write("Unable to load all data: There were %d unreferenced sections. View log for details" % numberOfUnreferencedSections)
 
 def loadModel(filename, checkExpectedValue=True):
     sections = loadSections(filename, checkExpectedValue)

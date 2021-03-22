@@ -754,7 +754,7 @@ class Importer:
             m3MaterialIndex = m3MaterialReference.materialIndex
             m3MaterialFieldName = shared.m3MaterialFieldNames[materialType]
             m3MaterialList = getattr(self.model, m3MaterialFieldName)
-            if len(m3MaterialList) <= m3MaterialIndex:
+            if len(m3MaterialList) <= m3MaterialIndex or self.materialReferenceIndexToNameMap[materialReferenceIndex] is None:
                 continue
             blenderMaterialsFieldName = shared.blenderMaterialsFieldNames[materialType]
             transferMethod = shared.materialTransferMethods[materialType]
@@ -1306,7 +1306,8 @@ class Importer:
                 meshObject.show_name = True
                 self.scene.collection.objects.link(meshObject)
 
-                mesh.m3_material_name = self.getNameOfMaterialWithReferenceIndex(m3Object.materialReferenceIndex)
+                if self.getNameOfMaterialWithReferenceIndex(m3Object.materialReferenceIndex) is not None:
+                    mesh.m3_material_name = self.getNameOfMaterialWithReferenceIndex(m3Object.materialReferenceIndex)
 
                 # merge vertices together which have always the same position and normal:
                 # This way there are not only fewer vertices to edit,
