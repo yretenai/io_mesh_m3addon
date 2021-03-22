@@ -21,20 +21,21 @@
 
 bl_info = {
     "name": "m3addon for M3 format: used by Blizzard's StarCraft 2 and Heroes of the Storm",
-    "author": "Florian Köberle, netherh, chaos2night, Talv",
-    "version": (0, 3, 0),
+    "author": "Florian Köberle, netherh, chaos2night, Talv, Solstice245",
+    "version": (0, 4, 0),
     "blender": (2, 80, 0),
     "location": "Properties Editor -> Scene -> M3 Panels",
     "description": "Allows to export and import models in M3 format.",
     "category": "Import-Export",
-    "wiki_url": "https://github.com/Talv/m3addon/blob/master/README.md",
-    "tracker_url": "https://github.com/Talv/m3addon/issues"
+    "doc_url": "https://github.com/SC2Mapster/m3addon/blob/master/README.md",
+    "tracker_url": "https://github.com/SC2Mapster/m3addon/issues"
 }
 
 if "bpy" in locals():
     import imp
     localModules = [
         ["cm", "projection"],
+        ["cm", "material"],
         ["cm"],
         ["ui", "projection"],
         ["ui"],
@@ -61,8 +62,8 @@ import bpy
 from bpy.props import StringProperty
 import bpy.types as bt
 from bpy_extras.io_utils import ExportHelper, ImportHelper
-import mathutils
 import math
+from .common import mlog
 from . import shared
 from .shared import selectBone, removeBone, selectOrCreateBone, selectBoneIfItExists
 from . import cm
@@ -571,12 +572,12 @@ def prepareDefaultValuesForNewAction(objectWithAnimationData, newAction):
         if propertyExists:
             shared.setDefaultValue(defaultAction,prop[0],prop[1], value)
         else:
-            print ("Can't find prop %s" % prop[0], prop[1])
+            mlog.debug("Can't find prop %s" % prop[0], prop[1])
             removedProperties.add(prop)
     propertiesBecomingUnanimated = oldAnimatedProperties.difference(newAnimatedProperties)
 
     if len(removedProperties) > 0:
-        print("Removing animations for %s since those properties do no longer exist" % removedProperties)
+        mlog.debug("Removing animations for %s since those properties do no longer exist" % removedProperties)
 
     removedCurves = list()
     if newAction != None:
@@ -856,7 +857,7 @@ def finUnusedMaterialName(scene):
     usedNames = set()
     for materialReferenceIndex in range(0, len(scene.m3_material_references)):
         materialReference = scene.m3_material_references[materialReferenceIndex]
-        material = shared.getMaterial(scene, materialReference.materialType, materialReference.materialIndex)
+        material = cm.getMaterial(scene, materialReference.materialType, materialReference.materialIndex)
         if material != None:
             usedNames.add(material.name)
     unusedName = None
@@ -1016,27 +1017,6 @@ physicsShapeTypeList = [("0", "Box", "Box shape with the given width, length and
                         ("5", "Mesh", "Mesh shape created from the attached mesh"),
                         ]
 
-uvSourceList = [("0", "Default", "First UV layer of mesh or generated whole image UVs for particles"),
-                 ("1", "UV Layer 2", "Second UV layer which can be used for decals"),
-                 ("2", "Ref Cubic Env", "For Env. Layer: Reflective Cubic Environment"),
-                 ("3", "Ref Spherical Env", "For Env. Layer: Reflective Spherical Environemnt"),
-                 ("4", "Planar Local z", "Planar Local z"),
-                 ("5", "Planar World z", "Planar World z"),
-                 ("6", "Animated Particle UV", "The flip book of the particle system is used to determine the UVs"),
-                 ("7", "Cubic Environment", "For Env. Layer: Cubic Environment"),
-                 ("8", "Spherical Environment", "For Env. Layer: Spherical Environment"),
-                 ("9", "UV Layer 3", "UV Layer 3"),
-                 ("10", "UV Layer 4", "UV Layer 4"),
-                 ("11", "Planar Local X", "Planar Local X"),
-                 ("12", "Planar Local Y", "Planar Local Y"),
-                 ("13", "Planar World X", "Planar World X"),
-                 ("14", "Planar World Y", "Planar World Y"),
-                 ("15", "Screen space", "Screen space"),
-                 ("16", "Tri Planar World", "Tri Planar World"),
-                 ("17", "Tri Planar World Local", "Tri Planar Local"),
-                 ("18", "Tri Planar World Local Z", "Tri Planar World Local Z")
-                 ]
-
 particleEmissionTypeList = [("0", "Constant", "Emitted particles fly towards a configureable direction with a configurable spread"),
                         ("1", "Radial", "Particles move into all kinds of directions"),
                         ("2", "Z Axis", "Picks randomly to move in the direction of the positive or negative local Z-Axis for the emitter.e"),
@@ -1112,38 +1092,9 @@ matLayerAndEmisBlendModeList = [("0", "Mod", "no description yet"),
                         ("5", "Team Color Diffuse Add", "no description yet")
                         ]
 
-colorChannelSettingList = [
-    (shared.colorChannelSettingRGB, "RGB", "Use red, green and blue color channel"),
-    (shared.colorChannelSettingRGBA, "RGBA", "Use red, green, blue and alpha channel"),
-    (shared.colorChannelSettingA, "Alpha Only", "Use alpha channel only"),
-    (shared.colorChannelSettingR, "Red Only", "Use red color channel only"),
-    (shared.colorChannelSettingG, "Green Only", "Use green color channel only"),
-    (shared.colorChannelSettingB, "Blue Only", "Use blue color channel only")
-    ]
-
-
 matSpecularTypeList = [("0", "RGB", "no description yet"),
                         ("1", "Alpha Only", "no description yet")
                         ]
-
-rttChannelList = [("-1", "None", "None"),
-                  ("0", "Layer 1", "Render To Texture Layer 1"),
-                  ("1", "Layer 2", "Render To Texture Layer 2"),
-                  ("2", "Layer 3", "Render To Texture Layer 3"),
-                  ("3", "Layer 4", "Render To Texture Layer 4"),
-                  ("4", "Layer 5", "Render To Texture Layer 5"),
-                  ("5", "Layer 6", "Render To Texture Layer 6"),
-                  ("6", "Layer 7", "Render To Texture Layer 7"),
-]
-
-fresnelTypeList = [("0", "Disabled", "Fresnel is disabled"),
-                  ("1", "Enabled", "Strength of layer is based on fresnel formula"),
-                  ("2", "Enabled; Inverted", "Strenth of layer is based on inverted fresnel formula")
-]
-
-videoModeList = [("0", "Loop", "Loop"),
-                 ("1", "Hold", "Hold")
-                ]
 
 contentToImportList = [("EVERYTHING", "Everything", "Import everything included in the m3 file"),
                        ("MESH_WITH_MATERIALS_ONLY", "Mesh with materials only", "Import the mesh with its m3 materials only")
@@ -1155,10 +1106,12 @@ lightTypeList = [# directional light isn"t supported yet: ("0", "Directional", "
                  ]
 
 
-animationExportAmount = [(shared.exportAmountAllAnimations, "All animations", "All animations will be exported"),
-                    (shared.exportAmountCurrentAnimation, "Current animation", "Only the current animation will be exported")
-                    # Possible future additions: CURRENT_FRAME or FIRST_FRAME
-                   ]
+animationExportAmount = [
+    (shared.exportAmountAllAnimations, "All animations", "All animations will be exported"),
+    (shared.exportAmountCurrentAnimation, "Current animation", "Only the current animation will be exported"),
+    # Possible future additions: CURRENT_FRAME or FIRST_FRAME
+    (shared.exportAmountNoAnimations, "None", "No animations at all")
+]
 
 
 class M3AnimIdData(bpy.types.PropertyGroup):
@@ -1199,62 +1152,14 @@ class M3Animation(bpy.types.PropertyGroup):
     alwaysGlobal : bpy.props.BoolProperty(options=set())
     globalInPreviewer : bpy.props.BoolProperty(options=set())
 
-class M3MaterialLayer(bpy.types.PropertyGroup):
-    name : bpy.props.StringProperty(default="Material Layer")
-    imagePath : bpy.props.StringProperty(name="image path", default="", options=set())
-    unknownbd3f7b5d : bpy.props.IntProperty(name="unknownbd3f7b5d", default=-1, options=set())
-    color : bpy.props.FloatVectorProperty(name="color", default=(1.0, 1.0, 1.0, 1.0), min = 0.0, max = 1.0, size=4, subtype="COLOR", options={"ANIMATABLE"})
-    textureWrapX : bpy.props.BoolProperty(options=set(), default=True)
-    textureWrapY : bpy.props.BoolProperty(options=set(), default=True)
-    invertColor : bpy.props.BoolProperty(options=set(), default=False)
-    clampColor : bpy.props.BoolProperty(options=set(), default=False)
-    colorEnabled : bpy.props.BoolProperty(options=set(), default=False)
-    uvSource : bpy.props.EnumProperty(items=uvSourceList, options=set(), default="0")
-    brightMult : bpy.props.FloatProperty(name="bright. mult.",options={"ANIMATABLE"}, default=1.0)
-    uvOffset : bpy.props.FloatVectorProperty(name="uv offset", default=(0.0, 0.0), size=2, subtype="XYZ", options={"ANIMATABLE"})
-    uvAngle : bpy.props.FloatVectorProperty(name="uv offset", default=(0.0, 0.0, 0.0), size=3, subtype="XYZ", options={"ANIMATABLE"})
-    uvTiling : bpy.props.FloatVectorProperty(name="uv tiling", default=(1.0, 1.0), size=2, subtype="XYZ", options={"ANIMATABLE"})
-    triPlanarOffset : bpy.props.FloatVectorProperty(name="tri planer offset", default=(0.0, 0.0, 0.0), size=3, subtype="XYZ", options={"ANIMATABLE"})
-    triPlanarScale : bpy.props.FloatVectorProperty(name="tri planer scale", default=(1.0, 1.0, 1.0), size=3, subtype="XYZ", options={"ANIMATABLE"})
-    flipBookRows : bpy.props.IntProperty(name="flipBookRows", default=0, options=set())
-    flipBookColumns : bpy.props.IntProperty(name="flipBookColumns", default=0, options=set())
-    flipBookFrame : bpy.props.IntProperty(name="flipBookFrame", default=0, options={"ANIMATABLE"})
-    midtoneOffset : bpy.props.FloatProperty(name="midtone offset", options={"ANIMATABLE"}, description="Can be used to make dark areas even darker so that only the bright regions remain")
-    brightness : bpy.props.FloatProperty(name="brightness", options={"ANIMATABLE"}, default=1.0)
-    rttChannel : bpy.props.EnumProperty(items=rttChannelList, options=set(), default="-1")
-    colorChannelSetting : bpy.props.EnumProperty(items=colorChannelSettingList, options=set(), default=shared.colorChannelSettingRGB)
-    fresnelType :  bpy.props.EnumProperty(items=fresnelTypeList, options=set(), default="0")
-    invertedFresnel : bpy.props.BoolProperty(options=set())
-    fresnelExponent : bpy.props.FloatProperty(default=4.0, options=set())
-    fresnelMin : bpy.props.FloatProperty(default=0.0, options=set())
-    fresnelMax : bpy.props.FloatProperty(default=1.0, options=set())
-    fresnelMaskX : bpy.props.FloatProperty(options=set(), min=0.0, max=1.0)
-    fresnelMaskY : bpy.props.FloatProperty(options=set(), min=0.0, max=1.0)
-    fresnelMaskZ : bpy.props.FloatProperty(options=set(), min=0.0, max=1.0)
-    fresnelRotationYaw : bpy.props.FloatProperty(subtype="ANGLE", options=set())
-    fresnelRotationPitch : bpy.props.FloatProperty(subtype="ANGLE", options=set())
-    fresnelLocalTransform : bpy.props.BoolProperty(options=set(), default=False)
-    fresnelDoNotMirror : bpy.props.BoolProperty(options=set(), default=False)
-    videoFrameRate : bpy.props.IntProperty(options=set(), default=24)
-    videoStartFrame : bpy.props.IntProperty(options=set(), default=0)
-    videoEndFrame : bpy.props.IntProperty(options=set(), default=-1)
-    videoMode : bpy.props.EnumProperty(items=videoModeList, options=set(), default="0")
-    videoSyncTiming : bpy.props.BoolProperty(options=set())
-    videoPlay : bpy.props.BoolProperty(name="videoPlay", options={"ANIMATABLE"}, default=True)
-    videoRestart : bpy.props.BoolProperty(name="videoRestart", options={"ANIMATABLE"}, default=True)
 
-
-class M3Material(bpy.types.PropertyGroup):
-    name : bpy.props.StringProperty(name="name", default="Material", options=set())
-    materialType : bpy.props.IntProperty(options=set())
-    materialIndex : bpy.props.IntProperty(options=set())
 
 
 class M3StandardMaterial(bpy.types.PropertyGroup):
     name: bpy.props.StringProperty(name="name", default="Material", update=handleMaterialNameChange, options=set())
     # the following field gets used to update the name of the material reference:
     materialReferenceIndex: bpy.props.IntProperty(options=set(), default=-1)
-    layers: bpy.props.CollectionProperty(type=M3MaterialLayer, options=set())
+    layers: bpy.props.CollectionProperty(type=cm.M3MaterialLayer, options=set())
     blendMode: bpy.props.EnumProperty(items=matBlendModeList, options=set(), default="0")
     priority: bpy.props.IntProperty(options=set(),
         name="Priority",
@@ -1329,7 +1234,7 @@ class M3DisplacementMaterial(bpy.types.PropertyGroup):
     # the following field gets used to update the name of the material reference:
     materialReferenceIndex : bpy.props.IntProperty(options=set(), default=-1)
     strengthFactor : bpy.props.FloatProperty(name="strength factor",options={"ANIMATABLE"}, default=1.0, description="Factor that gets multiplicated with the strength values")
-    layers : bpy.props.CollectionProperty(type=M3MaterialLayer, options=set())
+    layers : bpy.props.CollectionProperty(type=cm.M3MaterialLayer, options=set())
     priority : bpy.props.IntProperty(options=set())
 
 
@@ -1343,7 +1248,7 @@ class M3CompositeMaterial(bpy.types.PropertyGroup):
     name : bpy.props.StringProperty(name="name", default="Material", update=handleMaterialNameChange, options=set())
     # the following field gets used to update the name of the material reference:
     materialReferenceIndex : bpy.props.IntProperty(options=set(), default=-1)
-    layers : bpy.props.CollectionProperty(type=M3MaterialLayer, options=set())
+    layers : bpy.props.CollectionProperty(type=cm.M3MaterialLayer, options=set())
     sections : bpy.props.CollectionProperty(type=M3CompositeMaterialSection, options=set())
     sectionIndex : bpy.props.IntProperty(options=set(), default=0)
 
@@ -1352,7 +1257,7 @@ class M3TerrainMaterial(bpy.types.PropertyGroup):
     name : bpy.props.StringProperty(name="name", default="Material", update=handleMaterialNameChange, options=set())
     # the following field gets used to update the name of the material reference:
     materialReferenceIndex : bpy.props.IntProperty(options=set(), default=-1)
-    layers : bpy.props.CollectionProperty(type=M3MaterialLayer, options=set())
+    layers : bpy.props.CollectionProperty(type=cm.M3MaterialLayer, options=set())
 
 
 class M3VolumeMaterial(bpy.types.PropertyGroup):
@@ -1360,7 +1265,7 @@ class M3VolumeMaterial(bpy.types.PropertyGroup):
     # the following field gets used to update the name of the material reference:
     materialReferenceIndex : bpy.props.IntProperty(options=set(), default=-1)
     volumeDensity : bpy.props.FloatProperty(name="volume density",options={"ANIMATABLE"}, default=0.3, description="Factor that gets multiplicated with the strength values")
-    layers : bpy.props.CollectionProperty(type=M3MaterialLayer, options=set())
+    layers : bpy.props.CollectionProperty(type=cm.M3MaterialLayer, options=set())
 
 
 class M3VolumeNoiseMaterial(bpy.types.PropertyGroup):
@@ -1370,7 +1275,7 @@ class M3VolumeNoiseMaterial(bpy.types.PropertyGroup):
     volumeDensity : bpy.props.FloatProperty(name="volume density",options={"ANIMATABLE"}, default=0.3, description="Factor that gets multiplicated with the strength values")
     nearPlane : bpy.props.FloatProperty(name="near plane",options={"ANIMATABLE"}, default=0.0)
     falloff : bpy.props.FloatProperty(name="falloff",options={"ANIMATABLE"}, default=0.9)
-    layers : bpy.props.CollectionProperty(type=M3MaterialLayer, options=set())
+    layers : bpy.props.CollectionProperty(type=cm.M3MaterialLayer, options=set())
     scrollRate : bpy.props.FloatVectorProperty(name="scroll rate", default=(0.0, 0.0, 0.8), size=3, subtype="XYZ", options={"ANIMATABLE"})
     translation : bpy.props.FloatVectorProperty(name="translation", default=(0.0, 0.0, 0.0), size=3, subtype="XYZ", options={"ANIMATABLE"})
     scale : bpy.props.FloatVectorProperty(name="scale", default=(2.0, 2.0, 1.0), size=3, subtype="XYZ", options={"ANIMATABLE"})
@@ -1383,21 +1288,21 @@ class M3CreepMaterial(bpy.types.PropertyGroup):
     name : bpy.props.StringProperty(name="name", default="Material", update=handleMaterialNameChange, options=set())
     # the following field gets used to update the name of the material reference:
     materialReferenceIndex : bpy.props.IntProperty(options=set(), default=-1)
-    layers : bpy.props.CollectionProperty(type=M3MaterialLayer, options=set())
+    layers : bpy.props.CollectionProperty(type=cm.M3MaterialLayer, options=set())
 
 
 class M3STBMaterial(bpy.types.PropertyGroup):
     name : bpy.props.StringProperty(name="name", default="Material", update=handleMaterialNameChange, options=set())
     # the following field gets used to update the name of the material reference:
     materialReferenceIndex : bpy.props.IntProperty(options=set(), default=-1)
-    layers : bpy.props.CollectionProperty(type=M3MaterialLayer, options=set())
+    layers : bpy.props.CollectionProperty(type=cm.M3MaterialLayer, options=set())
 
 
 class M3LensFlareMaterial(bpy.types.PropertyGroup):
     name : bpy.props.StringProperty(name="name", default="Material", update=handleMaterialNameChange, options=set())
     # the following field gets used to update the name of the material reference:
     materialReferenceIndex : bpy.props.IntProperty(options=set(), default=-1)
-    layers : bpy.props.CollectionProperty(type=M3MaterialLayer, options=set())
+    layers : bpy.props.CollectionProperty(type=cm.M3MaterialLayer, options=set())
 
 class M3MaterialNode(bpy.types.PropertyGroup):
     name : bpy.props.StringProperty(name="name", default="Material", update=handleMaterialNameChange, options=set())
@@ -1701,10 +1606,22 @@ class M3BoneVisiblityOptions(bpy.types.PropertyGroup):
     showWarps : bpy.props.BoolProperty(default=True, options=set(), update=handleWarpVisibilityUpdate)
 
 
+class ExportM3ContainerVersion:
+    V23 = "23"
+    V26 = "26"
+    V29 = "29"
+
+
+ExportContainerM3VersionList = [
+    (ExportM3ContainerVersion.V23, "V23 (*stable*)", "Super old, but somewhat working. It was default export format till 2021."),
+    (ExportM3ContainerVersion.V26, "V26 (beta)", "Semi old, but with more features available, however it hasn't been tested thoroughly."),
+    (ExportM3ContainerVersion.V29, "V29 (alpha)", "Newest available for SC2. WIP.")
+]
+
 class M3ExportOptions(bpy.types.PropertyGroup):
     path : bpy.props.StringProperty(name="path", default="ExportedModel.m3", options=set())
-    testPatch20Format : bpy.props.BoolProperty(default=False, options=set())
-    animationExportAmount : bpy.props.EnumProperty(default=shared.exportAmountAllAnimations, items=animationExportAmount, options=set())
+    modlVersion : bpy.props.EnumProperty(name="M3 Version", default=ExportM3ContainerVersion.V26, items=ExportContainerM3VersionList, options=set())
+    animationExportAmount : bpy.props.EnumProperty(name="Animations", default=shared.exportAmountAllAnimations, items=animationExportAmount, options=set())
 
 
 class M3ImportOptions(bpy.types.PropertyGroup):
@@ -1801,8 +1718,9 @@ class ExportPanel(bpy.types.Panel):
 
         layout.prop(scene.m3_export_options, "path", text="")
         layout.operator("m3.quick_export", text="Export As M3")
-        layout.prop(scene.m3_export_options, "testPatch20Format", text="Use new experimental format")
-        layout.prop(scene.m3_export_options, "animationExportAmount", text="Export")
+
+        layout.prop(scene.m3_export_options, "modlVersion")
+        layout.prop(scene.m3_export_options, "animationExportAmount")
 
 
 class BoneVisibilityPanel(bpy.types.Panel):
@@ -1862,7 +1780,7 @@ class AnimationSequencesPanel(bpy.types.Panel):
         if animationIndex >= 0 and animationIndex < len(scene.m3_animations):
             animation = scene.m3_animations[animationIndex]
             layout.prop(animation, "name", text="Name")
-            
+
 
 class AnimationSequencesPropPanel(bpy.types.Panel):
     bl_idname = "OBJECT_PT_M3_animations_prop"
@@ -1932,39 +1850,18 @@ class AnimationSequenceTransformationCollectionsPanel(bpy.types.Panel):
                 col.operator("m3.stc_assign", text="Assign FCurves")
 
 
-def displayMaterialName(scene: bt.Scene, layout: bt.UILayout, materialReference):
-    materialType = materialReference.materialType
-    materialIndex = materialReference.materialIndex
-
-    if materialType == shared.standardMaterialTypeIndex:
-        material = scene.m3_standard_materials[materialIndex]
-        layout.prop(material, "name", text="Name")
-    elif materialType == shared.displacementMaterialTypeIndex:
-        material = scene.m3_displacement_materials[materialIndex]
-        layout.prop(material, "name", text="Name")
-    elif materialType == shared.compositeMaterialTypeIndex:
-        material = scene.m3_composite_materials[materialIndex]
-        layout.prop(material, "name", text="Name")
-    elif materialType == shared.terrainMaterialTypeIndex:
-        material = scene.m3_terrain_materials[materialIndex]
-        layout.prop(material, "name", text="Name")
-    elif materialType == shared.volumeMaterialTypeIndex:
-        material = scene.m3_volume_materials[materialIndex]
-        layout.prop(material, "name", text="Name")
-    elif materialType == shared.volumeNoiseMaterialTypeIndex:
-        material = scene.m3_volime_noise_materials[materialIndex]
-        layout.prop(material, "name", text="Name")
-    elif materialType == shared.creepMaterialTypeIndex:
-        material = scene.m3_creep_materials[materialIndex]
-        layout.prop(material, "name", text="Name")
-    elif materialType == shared.stbMaterialTypeIndex:
-        material = scene.m3_stb_materials[materialIndex]
-        layout.prop(material, "name", text="Name")
-    elif materialType == shared.lensFlareMaterialTypeIndex:
-        material = scene.m3_lens_flare_materials[materialIndex]
+def displayMaterialName(scene: bt.Scene, layout: bt.UILayout, materialReference: cm.M3Material):
+    layout = layout.split()
+    material = cm.getMaterial(scene, materialReference.materialType, materialReference.materialIndex)
+    if material is not None:
         layout.prop(material, "name", text="Name")
     else:
-        layout.label(text=("Unsupported material type %d" % materialType))
+        layout.label(text=("Name: %s [Unsupported]" % materialReference.name))
+    try:
+        materialTypeName = shared.materialNames[materialReference.materialType]
+    except KeyError:
+        materialTypeName = 'Unknown [%s]' % materialReference.materialType
+    layout.label(text=('Type: %s' % materialTypeName))
 
 
 class MaterialReferencesPanel(bpy.types.Panel):
@@ -1980,7 +1877,7 @@ class MaterialReferencesPanel(bpy.types.Panel):
         scene = context.scene
         row = layout.row()
         col = row.column()
-        col.template_list("UI_UL_list", "m3_material_references", scene, "m3_material_references", scene, "m3_material_reference_index", rows=2)
+        col.template_list("UI_UL_list", "m3_material_references", scene, "m3_material_references", scene, "m3_material_reference_index", rows=5)
 
         col = row.column(align=True)
         col.operator("m3.materials_add", icon="ADD", text="")
@@ -1992,7 +1889,7 @@ class MaterialReferencesPanel(bpy.types.Panel):
             materialReference = scene.m3_material_references[materialIndex]
 
             displayMaterialName(scene, layout, materialReference)
-                
+
 
 class MaterialSelectionPanel(bpy.types.Panel):
     bl_idname = "OBJECT_PT_M3_material_selection"
@@ -2158,7 +2055,7 @@ class MaterialPropertiesPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
-        
+
         materialIndex = scene.m3_material_reference_index
         if not(materialIndex >= 0 and materialIndex < len(scene.m3_material_references)):
             layout.label(text = "No material has been selected")
@@ -2238,7 +2135,7 @@ def displayMaterialLayersUI(scene, layout, materialReference):
     materialIndex = materialReference.materialIndex
     row = layout.row()
     col = row.column()
-    material = shared.getMaterial(scene, materialType, materialIndex)
+    material = cm.getMaterial(scene, materialType, materialIndex)
     if material != None:
         col.template_list("UI_UL_list", "m3_material_layers", material, "layers", scene, "m3_material_layer_index", rows=2)
         layerIndex = scene.m3_material_layer_index
@@ -2297,7 +2194,7 @@ class ObjectMaterialLayersPanel(bpy.types.Panel):
 def displayMaterialLayersColor(scene, layout, materialReference):
         materialType = materialReference.materialType
         materialIndex = materialReference.materialIndex
-        material = shared.getMaterial(scene, materialType, materialIndex)
+        material = cm.getMaterial(scene, materialType, materialIndex)
         row = layout.row()
         col = row.column()
 
@@ -2370,8 +2267,8 @@ class ObjectMaterialLayersColorPanel(bpy.types.Panel):
         materialIndex = scene.m3_material_reference_index
         materialReference = scene.m3_material_references[materialIndex]
         materialType = materialReference.materialType
-        material = shared.getMaterial(scene, materialType, materialIndex)
-        
+        material = cm.getMaterial(scene, materialType, materialIndex)
+
         if materialIndex >= 0 and materialIndex < len(scene.m3_material_references):
             layerIndex = scene.m3_material_layer_index
             if layerIndex >= 0 and layerIndex < len(material.layers):
@@ -2382,7 +2279,7 @@ class ObjectMaterialLayersColorPanel(bpy.types.Panel):
 def displayMaterialLayersUv(scene, layout, materialReference):
     materialType = materialReference.materialType
     materialIndex = materialReference.materialIndex
-    material = shared.getMaterial(scene, materialType, materialIndex)
+    material = cm.getMaterial(scene, materialType, materialIndex)
     row = layout.row()
     col = row.column()
 
@@ -2477,8 +2374,8 @@ class ObjectMaterialLayersUvPanel(bpy.types.Panel):
         materialIndex = scene.m3_material_reference_index
         materialReference = scene.m3_material_references[materialIndex]
         materialType = materialReference.materialType
-        material = shared.getMaterial(scene, materialType, materialIndex)
-        
+        material = cm.getMaterial(scene, materialType, materialIndex)
+
         if materialIndex >= 0 and materialIndex < len(scene.m3_material_references):
             materialReference = scene.m3_material_references[materialIndex]
 
@@ -2491,7 +2388,7 @@ class ObjectMaterialLayersUvPanel(bpy.types.Panel):
 def displayMaterialLayersFresnel(scene, layout, materialReference):
     materialType = materialReference.materialType
     materialIndex = materialReference.materialIndex
-    material = shared.getMaterial(scene, materialType, materialIndex)
+    material = cm.getMaterial(scene, materialType, materialIndex)
     row = layout.row()
     col = row.column()
 
@@ -2573,7 +2470,7 @@ class ObjectMaterialLayersFresnelPanel(bpy.types.Panel):
 def displayMaterialLayersRTT(scene, layout, materialReference):
     materialType = materialReference.materialType
     materialIndex = materialReference.materialIndex
-    material = shared.getMaterial(scene, materialType, materialIndex)
+    material = cm.getMaterial(scene, materialType, materialIndex)
     row = layout.row()
     col = row.column()
 
@@ -4050,7 +3947,7 @@ class M3_MATERIALS_OT_remove(bpy.types.Operator):
 
             for higherReferenceIndex in range(referenceIndex+1,len(scene.m3_material_references)):
                 higherReference = scene.m3_material_references[higherReferenceIndex]
-                material = shared.getMaterial(scene, higherReference.materialType, higherReference.materialIndex)
+                material = cm.getMaterial(scene, higherReference.materialType, higherReference.materialIndex)
                 if material != None:
                     material.materialReferenceIndex -= 1
 
@@ -4062,7 +3959,7 @@ class M3_MATERIALS_OT_remove(bpy.types.Operator):
                 if otherReference.materialType == materialType and otherReference.materialIndex > materialIndex:
                     otherReference.materialIndex -= 1
 
-            blenderMaterialsFieldName = shared.blenderMaterialsFieldNames[materialType]
+            blenderMaterialsFieldName = cm.blenderMaterialsFieldNames[materialType]
             blenderMaterialsField = getattr(scene, blenderMaterialsFieldName)
             blenderMaterialsField.remove(materialIndex)
 
@@ -4085,7 +3982,7 @@ class M3_COMPOSITE_MATERIAL_OT_add_section(bpy.types.Operator):
             materialType = materialReference.materialType
             materialIndex = materialReference.materialIndex
             if materialType == shared.compositeMaterialTypeIndex:
-                material = shared.getMaterial(scene, materialType, materialIndex)
+                material = cm.getMaterial(scene, materialType, materialIndex)
                 section = material.sections.add()
                 if len(scene.m3_material_references) >= 1:
                     section.name = scene.m3_material_references[0].name
@@ -4106,7 +4003,7 @@ class M3_COMPOSITE_MATERIAL_OT_remove_section(bpy.types.Operator):
             materialType = materialReference.materialType
             materialIndex = materialReference.materialIndex
             if materialType == shared.compositeMaterialTypeIndex:
-                material = shared.getMaterial(scene, materialType, materialIndex)
+                material = cm.getMaterial(scene, materialType, materialIndex)
                 sectionIndex = material.sectionIndex
                 if (sectionIndex >= 0) and (sectionIndex < len(material.sections)):
                     material.sections.remove(sectionIndex)
@@ -4349,10 +4246,10 @@ class M3_ANIMATIONS_OT_STC_select(bpy.types.Operator):
                     locLongAnimId = shared.getLongAnimIdOf(objectId, animPathPrefix + "location")
                     scaleLongAnimId = shared.getLongAnimIdOf(objectId, animPathPrefix + "scale")
                     if (rotLongAnimId in longAnimIds) or (locLongAnimId in longAnimIds) or (scaleLongAnimId in longAnimIds):
-                        bone.select_set(True)
+                        bone.select = True
                         selectObject = True
                     else:
-                        bone.select_set(False)
+                        bone.select = False
                 # Select object at the end, otherwise Blender 2.63a
                 # does not notice bone selection even if object is already selected
                 obj.select = selectObject
@@ -5163,8 +5060,7 @@ class M3_OT_quickExport(bpy.types.Operator):
         fileName = scene.m3_export_options.path
         if not "m3export" in locals():
             from . import m3export
-        m3export.export(scene, fileName)
-        return{"FINISHED"}
+        return m3export.export(scene, self, fileName)
 
 
 class M3_OT_quickImport(bpy.types.Operator):
@@ -5208,18 +5104,22 @@ class M3_OT_export(bpy.types.Operator, ExportHelper):
         maxlen= 1024, default= "")
 
     def execute(self, context):
-        print("Export", self.properties.filepath)
         scene = context.scene
         if not "m3export" in locals():
             from . import m3export
 
         scene.m3_export_options.path = self.properties.filepath
-        m3export.export(scene, self.properties.filepath)
-        return {"FINISHED"}
+        return m3export.export(scene, self, self.properties.filepath)
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        layout.prop(scene.m3_export_options, "modlVersion")
+        layout.prop(scene.m3_export_options, "animationExportAmount")
 
 
 class M3_OT_import(bpy.types.Operator, ImportHelper):
@@ -5237,7 +5137,7 @@ class M3_OT_import(bpy.types.Operator, ImportHelper):
         maxlen= 1024, default= "")
 
     def execute(self, context):
-        print("Import", self.properties.filepath)
+        mlog.debug("Import %s" % self.properties.filepath)
         scene = context.scene
         if not "m3import" in locals():
             from . import m3import
@@ -5355,14 +5255,14 @@ classes = (
     M3AnimatedPropertyReference,
     AssignedActionOfM3Animation,
     M3TransformationCollection,
-    M3MaterialLayer,
+    cm.M3MaterialLayer,
     M3CompositeMaterialSection,
     M3ParticleSpawnPoint,
     M3ParticleSystemCopy,
     M3RibbonEndPoint,
     M3PhysicsShape,
     M3Animation,
-    M3Material,
+    cm.M3Material,
     M3StandardMaterial,
     M3DisplacementMaterial,
     M3CompositeMaterial,
@@ -5508,7 +5408,7 @@ def register():
     bpy.types.Scene.m3_animation_old_index = bpy.props.IntProperty(options=set())
     bpy.types.Scene.m3_animations = bpy.props.CollectionProperty(type=M3Animation)
     bpy.types.Scene.m3_material_layer_index = bpy.props.IntProperty(options=set())
-    bpy.types.Scene.m3_material_references = bpy.props.CollectionProperty(type=M3Material)
+    bpy.types.Scene.m3_material_references = bpy.props.CollectionProperty(type=cm.M3Material)
     bpy.types.Scene.m3_standard_materials = bpy.props.CollectionProperty(type=M3StandardMaterial)
     bpy.types.Scene.m3_displacement_materials = bpy.props.CollectionProperty(type=M3DisplacementMaterial)
     bpy.types.Scene.m3_composite_materials = bpy.props.CollectionProperty(type=M3CompositeMaterial)

@@ -121,6 +121,7 @@ layerFieldNameToNameMap = {
 
 exportAmountAllAnimations="ALL_ANIMATIONS"
 exportAmountCurrentAnimation="CURRENT_ANIMATION"
+exportAmountNoAnimations="NO_ANIMATIONS"
 
 def getLayerNameFromFieldName(fieldName):
     name = layerFieldNameToNameMap.get(fieldName)
@@ -246,9 +247,9 @@ def selectBone(scene, boneName):
         bpy.ops.object.mode_set(mode='POSE')
 
     for b in armature.data.bones:
-        b.select_set(False)
+        b.select = False
 
-    bone.select_set(True)
+    bone.select = True
 
 
 def removeBone(scene, boneName):
@@ -328,6 +329,8 @@ def selectBoneIfItExists(scene, boneName):
     if bpy.ops.object.select_all.poll():
         bpy.ops.object.select_all(action='DESELECT')
     bone, armatureObject = findBoneWithArmatureObject(scene, boneName)
+    if bone is None:
+        return
     armature = armatureObject.data
     armatureObject.select_set(True)
     scene.view_layers[0].objects.active = armatureObject
@@ -399,10 +402,7 @@ def setAnimationWithIndexToCurrentData(scene, animationIndex):
         assignedAction.targetName = scene.name
         assignedAction.actionName = scene.animation_data.action.name
 
-def getMaterial(scene, materialTypeIndex, materialIndex):
-    blenderFieldName = blenderMaterialsFieldNames[materialTypeIndex]
-    materialsList = getattr(scene, blenderFieldName)
-    return materialsList[materialIndex]
+
 
 def sqr(x):
     return x*x
@@ -1631,9 +1631,8 @@ def transferStandardMaterial(transferer):
         "zpFillRequiredOnLowEnd",
         "excludeFromHighlighting",
         "clampOutput",
-        "geometryVisible",
     ])
-    # transferer.transferBit("flags", "geometryVisible", sinceVersion=18)
+    transferer.transferBit("flags", "geometryVisible", sinceVersion=17)
 
     # depthBlendFalloff needs to be transfered before useDepthBlendFalloff:
     # That way a corrupted model with useDepthBlendFalloff=true

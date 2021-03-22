@@ -19,15 +19,9 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-if "bpy" in locals():
-    import imp
-    if "m3" in locals():
-        imp.reload(m3)
-    if "shared" in locals():
-        imp.reload(shared)
-
 from . import m3
 from . import shared
+from . import cm
 import bpy
 import mathutils
 import math

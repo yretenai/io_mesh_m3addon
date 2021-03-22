@@ -3,11 +3,9 @@
 *.pyc
 __pycache__
 
-# user specific configs
-.vscode/
-
 # tmp test junk
 test/
+logs/
 
 # m3xml to exe
 build/

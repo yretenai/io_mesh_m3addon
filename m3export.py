@@ -19,19 +19,11 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-if "bpy" in locals():
-    import imp
-    if "m3" in locals():
-        imp.reload(m3)
-    if "shared" in locals():
-        imp.reload(shared)
-    if "calculateTangents" in locals():
-        imp.reload(calculateTangents)
-
-
 from typing import Iterator, Iterable, List, Dict
 from . import m3
 from . import shared
+from . import cm
+from .common import mlog
 import bpy
 import mathutils
 import os.path
@@ -43,9 +35,22 @@ import math
 actionTypeScene = "SCENE"
 actionTypeArmature = "OBJECT"
 
+class ExportError(Exception):
+    def __init__(self, message: str):
+        super().__init__()
+        self.message = message
+
+class ExportErrorMODLVersionInsufficient(Exception):
+    def __init__(self, minVersion: int, cause: str = None):
+        super().__init__()
+        self.message = f'Unable to export in choosen version of m3 container, try version {minVersion} or higher. Reason: {cause}.'
+
 class Exporter:
-    def export(self, scene: bpy.types.Scene, m3FileName):
+    def __init__(self, scene: bpy.types.Scene, operator: bpy.types.Operator):
         self.scene = scene
+        self.operator = operator
+
+    def export(self, m3FileName):
         self.initStructureVersionMap()
         self.selectAnimationsForExport()
         self.isAnimationExport = m3FileName.endswith(".m3a")
@@ -53,8 +58,8 @@ class Exporter:
             bpy.ops.object.mode_set(mode='OBJECT')
         self.generatedAnimIdCounter = 0
         self.boundingAnimId = 0x1f9bd2
-        if scene.render.fps != 30:
-            print("Warning: The currently configured frame rate is %s. For compability the model will be exported with a frame rate of 30." % scene.render.fps)
+        if self.scene.render.fps != 30:
+            print("Warning: The currently configured frame rate is %s. For compability the model will be exported with a frame rate of 30." % self.scene.render.fps)
         self.boneIndexToDefaultAbsoluteMatrixMap = {}
         self.animationNameToFrameToBoneIndexToAbsoluteMatrixMap = {}
         self.prepareAnimIdMaps()
@@ -63,7 +68,7 @@ class Exporter:
         for animationIndex in self.animationIndicesToExport:
             animation = self.scene.m3_animations[animationIndex]
             if animation.name in self.nameToAnimIdToAnimDataMap:
-                raise Exception("Animations must have unique names. Use number suffixes like 'Stand 01' and 'Stand 02'")
+                raise ExportError("Animations must have unique names. Use number suffixes like 'Stand 01' and 'Stand 02'")
             self.nameToAnimIdToAnimDataMap[animation.name] = {}
         self.initOldReferenceIndicesInCorrectedOrder()
         self.initMaterialNameToNewReferenceIndexMap()
@@ -73,7 +78,18 @@ class Exporter:
 
     def initStructureVersionMap(self):
         self.structureVersionMap = {}
-        if self.scene.m3_export_options.testPatch20Format:
+        if self.scene.m3_export_options.modlVersion == "29":
+            self.structureVersionMap["MODL"] = 29
+            self.structureVersionMap["EVNT"] = 2
+            self.structureVersionMap["SEQS"] = 2
+            self.structureVersionMap["LAYR"] = 26
+            self.structureVersionMap["MAT_"] = 20
+            self.structureVersionMap["PAR_"] = 24
+            self.structureVersionMap["PROJ"] = 5
+            self.structureVersionMap["PHSH"] = 3
+            self.structureVersionMap["PHRB"] = 4
+            self.structureVersionMap["RIB_"] = 9
+        elif self.scene.m3_export_options.modlVersion == "26":
             self.structureVersionMap["MODL"] = 26
             self.structureVersionMap["EVNT"] = 2
             self.structureVersionMap["SEQS"] = 2
@@ -84,7 +100,7 @@ class Exporter:
             self.structureVersionMap["PHSH"] = 3
             self.structureVersionMap["PHRB"] = 4
             self.structureVersionMap["RIB_"] = 8
-        else:
+        elif self.scene.m3_export_options.modlVersion == "23":
             self.structureVersionMap["MODL"] = 23
             self.structureVersionMap["EVNT"] = 1
             self.structureVersionMap["SEQS"] = 1
@@ -95,6 +111,8 @@ class Exporter:
             self.structureVersionMap["PHSH"] = 1
             self.structureVersionMap["PHRB"] = 2
             self.structureVersionMap["RIB_"] = 6
+        else:
+            raise ExportError('Unsupported M3 container: V%s' % self.scene.m3_export_options.modlVersion)
 
         self.structureVersionMap["BONE"] = 1
         self.structureVersionMap["Vector3AnimationReference"] = 0
@@ -183,8 +201,10 @@ class Exporter:
             self.animationIndicesToExport = range(len(scene.m3_animations))
         elif animationExportAmount == shared.exportAmountCurrentAnimation:
             self.animationIndicesToExport = [scene.m3_animation_index]
+        elif animationExportAmount == shared.exportAmountNoAnimations:
+            self.animationIndicesToExport = []
         else:
-            raise Exception("Unsupported export amount option: %s" % scene.m3_export_options)
+            raise ExportError("Unsupported export amount option: %s" % scene.m3_export_options)
 
     def createModel(self, m3FileName):
         model = self.createInstanceOf("MODL")
@@ -276,7 +296,7 @@ class Exporter:
                 boneIndex = len(model.bones)
                 boneName = blenderBone.name
                 if boneName in self.boneNameToBoneIndexMap:
-                    raise Exception("There are multiple bones with the name %s" % blenderBone.name)
+                    raise ExportError("There are multiple bones with the name %s" % blenderBone.name)
                 boneNamesOfArmature.append(boneName)
                 self.boneNameToBoneIndexMap[boneName] = boneIndex
 
@@ -303,9 +323,9 @@ class Exporter:
                 absRestPosMatrix = objectToWorldMatrix @ blenderBone.matrix_local
                 self.restPositionsOfExportedBones.append(absRestPosMatrix.translation.copy())
                 if not blenderBone.use_inherit_rotation:
-                    raise Exception("The setting inhertRotation=false of bone %s is not exportable!" % boneName)
+                    raise ExportError("The setting inhertRotation=false of bone %s is not exportable!" % boneName)
                 if not blenderBone.use_inherit_scale:
-                    raise Exception("The setting inhertScale=false of bone %s is not exportable!" % boneName)
+                    raise ExportError("The setting inhertScale=false of bone %s is not exportable!" % boneName)
 
 
                 if blenderBone.parent != None:
@@ -567,7 +587,7 @@ class Exporter:
                     for sectionIndex, section in enumerate(compositeMaterial.sections):
                         oldChildReferenceIndex = materialNameToOldReferenceIndexMap.get(section.name)
                         if oldChildReferenceIndex == None:
-                            raise Exception("The composite material %s uses '%s' as material, but no m3 material with that name exist!" % (compositeMaterial.name, section.name))
+                            raise ExportError("The composite material %s uses '%s' as material, but no m3 material with that name exist!" % (compositeMaterial.name, section.name))
                         if not oldChildReferenceIndex in self.oldReferenceIndicesInCorrectedOrder:
                             canBeDefined = False
 
@@ -659,7 +679,7 @@ class Exporter:
 
             materialReferenceIndex = self.materialNameToNewReferenceIndexMap.get(mesh.m3_material_name)
             if materialReferenceIndex == None:
-                raise Exception("The mesh %s uses '%s' as material, but no m3 material with that name exist!" % (mesh.name, mesh.m3_material_name))
+                raise ExportError("The mesh %s uses '%s' as material, but no m3 material with that name exist!" % (mesh.name, mesh.m3_material_name))
 
             firstBoneLookupIndex = len(model.boneLookup)
             staticMeshBoneName = "StaticMesh"
@@ -675,7 +695,7 @@ class Exporter:
                     for blenderBoneIndex, blenderBone in enumerate(armature.bones):
                         boneNamesOfArmature.add(blenderBone.name)
             else:
-                raise Exception("The mesh %s has invalid modifiers: Mesh must have no modifiers except single one for the armature and one for edge split." % meshObject.name)
+                raise ExportError("The mesh %s has invalid modifiers: Mesh must have no modifiers except single one for the armature and one for edge split." % meshObject.name)
             objectToWorldMatrix = meshObject.matrix_world
 
             vertexColor = mesh.vertex_colors.get(rgbColorChannelName)
@@ -852,7 +872,7 @@ class Exporter:
             m3Object.regionIndex = meshIndex
             materialReferenceIndex = self.materialNameToNewReferenceIndexMap.get(mesh.m3_material_name)
             if materialReferenceIndex == None:
-                raise Exception("The mesh %s uses '%s' as material, but no m3 material with that name exist!" % (mesh.name, mesh.m3_material_name))
+                raise ExportError("The mesh %s uses '%s' as material, but no m3 material with that name exist!" % (mesh.name, mesh.m3_material_name))
             m3Object.materialReferenceIndex = materialReferenceIndex
 
 
@@ -1476,12 +1496,12 @@ class Exporter:
 
             materialReferenceIndex = self.materialNameToNewReferenceIndexMap.get(particleSystem.materialName)
             if materialReferenceIndex == None:
-                raise Exception("The particle system %s uses '%s' as material, but no m3 material with that name exist!" % (particleSystem.name, particleSystem.materialName))
+                raise ExportError("The particle system %s uses '%s' as material, but no m3 material with that name exist!" % (particleSystem.name, particleSystem.materialName))
             m3ParticleSystem.materialReferenceIndex = materialReferenceIndex
             m3ParticleSystem.worldForceChannelsCopy = m3ParticleSystem.worldForceChannels
             m3ParticleSystem.trailingParticlesIndex = particleSystemNameToIndexMap.get(particleSystem.trailingParticlesName, -1)
             if m3ParticleSystem.trailingParticlesIndex == -1 and particleSystem.trailingParticlesName != "":
-                raise Exception("The particle system %s has configured a particle system called %s as trailing parameters but it does not exist." % (particleSystem.name, m3ParticleSystem.trailingParticlesName))
+                raise ExportError("The particle system %s has configured a particle system called %s as trailing parameters but it does not exist." % (particleSystem.name, m3ParticleSystem.trailingParticlesName))
 
 
             for spawnPointIndex, spawnPoint in enumerate(particleSystem.spawnPoints):
@@ -1536,7 +1556,7 @@ class Exporter:
 
             materialReferenceIndex = self.materialNameToNewReferenceIndexMap.get(ribbon.materialName)
             if materialReferenceIndex == None:
-                raise Exception("The ribbon %s uses '%s' as material, but no m3 material with that name exist!" % (ribbon.name, ribbon.materialName))
+                raise ExportError("The ribbon %s uses '%s' as material, but no m3 material with that name exist!" % (ribbon.name, ribbon.materialName))
             m3Ribbon.materialReferenceIndex = materialReferenceIndex
 
             if len(ribbon.endPoints) > 0:
@@ -1549,7 +1569,7 @@ class Exporter:
                 boneName = endPoint.name
                 boneIndex = self.boneNameToBoneIndexMap.get(boneName)
                 if boneIndex == None:
-                    raise Exception("The bone %s of an end point from ribbon %s does not exist" % (boneName, ribbon.name))
+                    raise ExportError("The bone %s of an end point from ribbon %s does not exist" % (boneName, ribbon.name))
                 m3EndPoint.boneIndex = boneIndex
 
 
@@ -1595,7 +1615,7 @@ class Exporter:
 
             materialReferenceIndex = self.materialNameToNewReferenceIndexMap.get(projection.materialName)
             if materialReferenceIndex == None:
-                raise Exception("The projection %s uses '%s' as material, but no m3 material with that name exist!" % (projection.name, projection.materialName))
+                raise ExportError("The projection %s uses '%s' as material, but no m3 material with that name exist!" % (projection.name, projection.materialName))
             m3Projection.materialReferenceIndex = materialReferenceIndex
 
             model.projections.append(m3Projection)
@@ -1661,6 +1681,7 @@ class Exporter:
     def initRigidBodies(self, model):
         scene = self.scene
         for rigidBodyIndex, rigidBody in enumerate(scene.m3_rigid_bodies):
+            self.operator.report({'WARNING'}, 'M3Export: Attempting to export rigid body "%s". This might corrupt the model and crash the game.' % rigidBody.boneName)
             boneName = rigidBody.boneName
             boneIndex = self.boneNameToBoneIndexMap.get(boneName)
             if boneIndex == None:
@@ -1807,11 +1828,22 @@ class Exporter:
             materialReference = self.scene.m3_material_references[oldReferenceIndex]
             materialType = materialReference.materialType
             materialIndex = materialReference.materialIndex
-            material = shared.getMaterial(scene, materialType, materialIndex)
+            material = cm.getMaterial(scene, materialType, materialIndex)
             if material == None:
-                raise Exception("The material list contains an unsupported material of type %s" % shared.materialNames[materialType])
+                raise ExportError("The material list contains an unsupported material of type %s" % shared.materialNames[materialType])
             model.materialReferences.append(self.createMaterialReference(materialIndex, materialType))
 
+        if len(scene.m3_volume_noise_materials) > 0 and self.structureVersionMap["MODL"] < 25:
+            materialNames = [*map(lambda x: x.name, scene.m3_volume_noise_materials)]
+            raise ExportErrorMODLVersionInsufficient(25, f'Volume noise materials: {materialNames}')
+
+        if len(scene.m3_stb_materials) > 0 and self.structureVersionMap["MODL"] < 26:
+            materialNames = [*map(lambda x: x.name, scene.m3_stb_materials)]
+            raise ExportErrorMODLVersionInsufficient(26, f'Splat terrain bake materials: {materialNames}')
+
+        if len(scene.m3_lens_flare_materials) > 0 and self.structureVersionMap["MODL"] < 29:
+            materialNames = [*map(lambda x: x.name, scene.m3_lens_flare_materials)]
+            raise ExportErrorMODLVersionInsufficient(29, f'Lens flare materials: {materialNames}')
 
         for materialIndex, material in enumerate(scene.m3_standard_materials):
             model.standardMaterials.append(self.createStandardMaterial(materialIndex, material))
@@ -1831,20 +1863,11 @@ class Exporter:
         for materialIndex, material in enumerate(scene.m3_creep_materials):
             model.creepMaterials.append(self.createCreepMaterial(materialIndex, material))
 
-        if (len(scene.m3_volume_noise_materials) > 0) and self.structureVersionMap["MODL"] < 25:
-            raise Exception("The chosen export format (version) does not support the export of volume noise materials")
-
         for materialIndex, material in enumerate(scene.m3_volume_noise_materials):
             model.volumeNoiseMaterials.append(self.createVolumeNoiseMaterial(materialIndex, material))
 
-        if (len(scene.m3_stb_materials) > 0) and self.structureVersionMap["MODL"] < 26:
-            raise Exception("The chosen export format (version) does not support the export of splat terrain bake materials")
-
         for materialIndex, material in enumerate(scene.m3_stb_materials):
             model.splatTerrainBakeMaterials.append(self.createSTBMaterial(materialIndex, material))
-
-        if (len(scene.m3_lens_flare_materials) > 0) and self.structureVersionMap["MODL"] < 29:
-            model.creepMaterials.append(self.createLensFlareMaterial(materialIndex, material))
 
 
     def createMaterialLayer(self, layer, animPathPrefix):
@@ -2034,7 +2057,7 @@ class Exporter:
         return m3Material
 
     def createLensFlareMaterial(self, materialIndex, material):
-        raise Exception("Export of lens flare materials has not been implemented yet. Material '%s' cannot be exported." % material.name)
+        raise NotImplementedError()
 
     def createNullVector2AnimationReference(self, x, y, interpolationType=1):
         animRef = self.createInstanceOf("Vector2AnimationReference")
@@ -2700,7 +2723,27 @@ class BlenderToM3DataTransferer:
         setattr(self.m3Object, fieldName , int(value))
 
 
-def export(scene, filename):
-    exporter = Exporter()
+def export(scene: bpy.types.Scene, operator: bpy.types.Operator, filename):
+    exporter = Exporter(scene, operator)
+
+    # prepare scene for export of animation (is this actually needed?)
     shared.setAnimationWithIndexToCurrentData(scene, scene.m3_animation_index)
-    exporter.export(scene, filename)
+    tmp_anim_index = scene.m3_animation_index
+
+    try:
+        exporter.export(filename)
+        return {'FINISHED'}
+    except ExportErrorMODLVersionInsufficient as e:
+        operator.report({'ERROR'}, e.message)
+    except ExportError as e:
+        mlog.exception('failed to export')
+        operator.report({'ERROR'}, f'M3Export failed, reason: {e.message}')
+    except:
+        mlog.exception('failed to export')
+        raise
+    finally:
+        # restore animation selection
+        if scene.m3_animation_index != tmp_anim_index:
+            scene.m3_animation_index = tmp_anim_index
+            shared.setAnimationWithIndexToCurrentData(scene, tmp_anim_index)
+    return {'CANCELLED'}
